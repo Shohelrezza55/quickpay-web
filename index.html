@@ -10,43 +10,31 @@
     <style>
         body { background: #f1f2f6; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
         
-        /* ডাউনলোড বার স্টাইল */
+        /* ডাউনলোড বার */
         .download-bar {
-            background: #1e3799;
-            color: white;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            background: #1e3799; color: white; padding: 10px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
         .download-btn {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 12px;
-            transition: 0.3s;
+            background: #27ae60; color: white; border: none; padding: 8px 15px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;
         }
-        .download-btn:active { transform: scale(0.9); }
 
         .top { background: #1e3799; padding: 40px 20px; color: white; text-align: center; border-radius: 0 0 30px 30px; }
         .balance-card { background: white; margin: -20px 20px 0; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
         .balance-card h2 { color: #2ecc71; font-size: 35px; margin: 10px 0; }
-        .promo-ad { background: linear-gradient(45deg, #eb2f06, #1e3799); margin: 20px; padding: 15px; border-radius: 15px; color: white; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        .promo-ad { background: linear-gradient(45deg, #eb2f06, #1e3799); margin: 20px; padding: 15px; border-radius: 15px; color: white; text-align: center; }
         .promo-ad b { font-size: 20px; color: #f1c40f; }
+
         .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
-        .item { background: white; padding: 20px; border-radius: 20px; text-align: center; text-decoration: none; color: #2f3542; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; }
-        .item:active { transform: scale(0.95); background: #f9f9f9; }
+        .item { background: white; padding: 20px; border-radius: 20px; text-align: center; text-decoration: none; color: #2f3542; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .item i { font-size: 28px; color: #1e3799; margin-bottom: 10px; display: block; }
-        .social-box { display: flex; justify-content: space-around; padding: 15px 20px; background: white; margin: 0 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        .social-box { display: flex; justify-content: space-around; padding: 15px 20px; background: white; margin: 0 20px; border-radius: 15px; }
         .social-box a { font-size: 25px; text-decoration: none; }
+        
         .logout { margin: 20px; padding: 15px; background: #ff4757; color: white; text-align: center; border-radius: 15px; text-decoration: none; display: block; font-weight: bold; }
     </style>
 </head>
@@ -90,44 +78,49 @@
     <a href="#" onclick="logoutUser()" class="logout">লগআউট করুন</a>
 
     <script>
+        // ফায়ারবেস কনফিগারেশন
         const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         function startDashboard() {
             const userPhone = localStorage.getItem("savedUser");
-            if (localStorage.getItem("isLoggedIn") !== "true" || !userPhone) {
+            const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+            // যদি ইউজার লগইন না থাকে, তবে তাকে লগইন পেজে পাঠাবে
+            if (isLoggedIn !== "true" || !userPhone) {
                 window.location.replace("login.html");
                 return;
             }
 
+            // রিয়েল-টাইম ব্যালেন্স আপডেট
             db.ref('users/' + userPhone).on('value', (s) => {
                 if (s.exists()) {
                     document.getElementById('welcomeMsg').innerText = "স্বাগতম, " + (s.val().name || userPhone);
-                    document.getElementById('uBalance').innerText = "৳ " + (s.val().balance || 0).toLocaleString();
+                    const bal = s.val().balance || 0;
+                    document.getElementById('uBalance').innerText = "৳ " + bal.toLocaleString();
+                } else {
+                    // যদি ইউজার ডাটাবেস থেকে ডিলিট হয়ে যায়
+                    logoutUser();
                 }
             });
         }
 
         function logoutUser() { 
             localStorage.setItem("isLoggedIn", "false"); 
+            localStorage.removeItem("savedUser");
             window.location.replace("login.html"); 
         }
 
-        // APK ডাউনলোড ফাংশন
         function downloadAPK() {
-            // আপনার APK ফাইলের লিঙ্কটি এখানে দিন (যেমন: 'app-release.apk')
-            // যদি এটি নেটলিফাইতে আপলোড করা থাকে তবে শুধু ফাইলের নাম দিলেই হবে
             const apkUrl = "app-release.apk"; 
-            
             const link = document.createElement('a');
             link.href = apkUrl;
             link.download = "QuickPayBD.apk";
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
-            alert("আপনার ডাউনলোড শুরু হয়েছে! শেষ হলে ফাইলটি ইন্সটল করুন।");
+            alert("আপনার ডাউনলোড শুরু হয়েছে!");
         }
     </script>
 </body>
