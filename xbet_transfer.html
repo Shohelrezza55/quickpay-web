@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1xBet Transfer</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background: #050a18; font-family: sans-serif; color: white; padding: 20px; }
+        .card { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); }
+        input { width: 100%; padding: 14px; margin-top: 10px; border-radius: 12px; border: 1px solid #333; background: #000; color: white; box-sizing: border-box; }
+        .btn { width: 100%; padding: 18px; margin-top: 25px; border: none; border-radius: 15px; background: #00f2ff; color: #000; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3 style="text-align:center; color:#00f2ff;">1xBet ID Load</h3>
+        <input type="number" id="id" placeholder="প্লেয়ার আইডি">
+        <input type="number" id="am" placeholder="টাকার পরিমাণ">
+        <button class="btn" onclick="transfer()">আইডি লোড করুন 🚀</button>
+    </div>
+    <script>
+        const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function transfer() {
+            const user = localStorage.getItem("savedUser");
+            const id = document.getElementById('id').value;
+            const am = parseFloat(document.getElementById('am').value);
+            if(!id || !am) return alert("সব তথ্য দিন!");
+
+            db.ref('users/'+user).once('value', s => {
+                const bal = s.val().balance || 0;
+                if(bal >= am) {
+                    db.ref('users/'+user).update({ balance: bal - am });
+                    const msg = `🎮 1xBet লোড রিকোয়েস্ট!\nইউজার: ${user}\nID: ${id}\nটাকা: ${am}\n✅ ব্যালেন্স কাটা হয়েছে।`;
+                    fetch(`https://api.telegram.org/bot7725946897:AAHLBfX2k2fO6u_yW3165ZqFp2F-Ew_M57E/sendMessage?chat_id=7414008169&text=${encodeURIComponent(msg)}`);
+                    alert("সফল! ব্যালেন্স কাটা হয়েছে।"); window.location.replace("dashboard.html");
+                } else alert("ব্যালেন্স নেই!");
+            });
+        }
+    </script>
+</body>
+</html>
