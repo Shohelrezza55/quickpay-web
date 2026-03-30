@@ -3,124 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ড্যাশবোর্ড - কুইকপে</title>
+    <title>কুইকপে বিডি - প্রবেশ করুন</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body { background: #f1f2f6; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
+        :root { --primary: #1e3799; --bg: #f1f2f6; }
+        body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
         
-        /* ডাউনলোড বার */
-        .download-bar {
-            background: #1e3799; color: white; padding: 10px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .download-btn {
-            background: #27ae60; color: white; border: none; padding: 8px 15px;
-            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;
-        }
+        .auth-card { background: white; width: 85%; max-width: 400px; padding: 35px 25px; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; }
+        .logo i { font-size: 50px; color: var(--primary); margin-bottom: 10px; }
+        h2 { color: var(--primary); margin: 10px 0; font-size: 24px; }
+        p { color: #666; font-size: 14px; margin-bottom: 20px; }
 
-        .top { background: #1e3799; padding: 40px 20px; color: white; text-align: center; border-radius: 0 0 30px 30px; }
-        .balance-card { background: white; margin: -20px 20px 0; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
-        .balance-card h2 { color: #2ecc71; font-size: 35px; margin: 10px 0; }
-        
-        .promo-ad { background: linear-gradient(45deg, #eb2f06, #1e3799); margin: 20px; padding: 15px; border-radius: 15px; color: white; text-align: center; }
-        .promo-ad b { font-size: 20px; color: #f1c40f; }
+        .input-box { position: relative; margin-bottom: 15px; }
+        .input-box i { position: absolute; left: 15px; top: 15px; color: #a4b0be; }
+        input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; outline: none; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); }
 
-        .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
-        .item { background: white; padding: 20px; border-radius: 20px; text-align: center; text-decoration: none; color: #2f3542; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .item i { font-size: 28px; color: #1e3799; margin-bottom: 10px; display: block; }
+        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
         
-        .social-box { display: flex; justify-content: space-around; padding: 15px 20px; background: white; margin: 0 20px; border-radius: 15px; }
-        .social-box a { font-size: 25px; text-decoration: none; }
+        .forget-link { display: block; margin-top: 12px; font-size: 13px; color: #eb2f06; cursor: pointer; text-decoration: none; font-weight: 500; }
+        .toggle-text { margin-top: 25px; font-size: 14px; color: #57606f; border-top: 1px solid #eee; padding-top: 15px; }
+        .toggle-link { color: var(--primary); font-weight: bold; cursor: pointer; text-decoration: underline; margin-left: 5px; }
         
-        .logout { margin: 20px; padding: 15px; background: #ff4757; color: white; text-align: center; border-radius: 15px; text-decoration: none; display: block; font-weight: bold; }
+        #regFields { display: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body onload="startDashboard()">
+<body onload="checkUserStatus()">
 
-    <div class="download-bar">
-        <div style="display: flex; align-items: center;">
-            <i class="fab fa-android" style="font-size: 20px; margin-right: 8px; color: #3DDC84;"></i>
-            <span style="font-size: 13px; font-weight: bold;">অফিশিয়াল অ্যাপ ডাউনলোড করুন</span>
+    <div class="auth-card fade-in">
+        <div class="logo"><i class="fas fa-user-lock"></i></div>
+        <h2 id="title">লগইন</h2>
+        <p id="subTitle">আপনার তথ্য দিয়ে প্রবেশ করুন</p>
+
+        <div class="input-box">
+            <i class="fas fa-phone"></i>
+            <input type="number" id="phone" placeholder="মোবাইল নম্বর">
         </div>
-        <button class="download-btn" onclick="downloadAPK()">ডাউনলোড</button>
-    </div>
 
-    <div class="top">
-        <h3 id="welcomeMsg">স্বাগতম...</h3>
-    </div>
+        <div id="regFields">
+            <div class="input-box">
+                <i class="fas fa-user"></i>
+                <input type="text" id="name" placeholder="আপনার নাম">
+            </div>
+            <div class="input-box">
+                <i class="fas fa-envelope"></i>
+                <input type="email" id="email" placeholder="ইমেইল">
+            </div>
+        </div>
 
-    <div class="balance-card">
-        <small>আপনার বর্তমান ব্যালেন্স</small>
-        <h2 id="uBalance">৳ ০.০০</h2>
-    </div>
+        <div class="input-box" id="passContainer">
+            <i class="fas fa-key"></i>
+            <input type="password" id="password" placeholder="পাসওয়ার্ড দিন">
+        </div>
 
-    <div class="promo-ad">
-        🔥 Use Promo Code for 100% Bonus! 🔥<br>
-        Promo Code: <b>1x74643</b>
-    </div>
+        <button class="btn" id="mainBtn" onclick="handleAuth()">প্রবেশ করুন</button>
+        
+        <span class="forget-link" id="forgetBtn" onclick="forgetPassword()">পাসওয়ার্ড ভুলে গেছেন?</span>
 
-    <div class="menu">
-        <a href="deposit.html" class="item"><i class="fas fa-plus-circle" style="color: #27ae60;"></i>ডিপোজিট</a>
-        <a href="withdraw.html" class="item"><i class="fas fa-minus-circle" style="color: #e67e22;"></i>উইথড্র</a>
-        <a href="1xbet.html" class="item"><i class="fas fa-gamepad" style="color: #2980b9;"></i>1Xbet</a>
-        <a href="service.html" class="item"><i class="fas fa-headset" style="color: #8e44ad;"></i>সার্ভিস</a>
+        <div class="toggle-text">
+            <span id="switchMsg">অ্যাকাউন্ট নেই?</span>
+            <span class="toggle-link" id="switchBtn" onclick="toggleAuth()">রেজিস্ট্রেশন করুন</span>
+        </div>
     </div>
-
-    <div class="social-box">
-        <a href="https://t.me/veryfreetips" style="color: #0088cc;"><i class="fab fa-telegram"></i></a>
-        <a href="https://t.me/PZEEDMIR" style="color: #24A1DE;"><i class="fas fa-user-shield"></i></a>
-        <a href="https://m.me/100068273520772" style="color: #006AFF;"><i class="fab fa-facebook-messenger"></i></a>
-    </div>
-
-    <a href="#" onclick="logoutUser()" class="logout">লগআউট করুন</a>
 
     <script>
-        // ফায়ারবেস কনফিগারেশন
         const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function startDashboard() {
-            const userPhone = localStorage.getItem("savedUser");
-            const isLoggedIn = localStorage.getItem("isLoggedIn");
+        let isLogin = true;
 
-            // যদি ইউজার লগইন না থাকে, তবে তাকে লগইন পেজে পাঠাবে
-            if (isLoggedIn !== "true" || !userPhone) {
-                window.location.replace("login.html");
+        function checkUserStatus() {
+            const savedPhone = localStorage.getItem("savedUser");
+            if (savedPhone) {
+                document.getElementById('phone').value = savedPhone;
+                isLogin = true;
+            } else {
+                toggleAuth();
+            }
+        }
+
+        function toggleAuth() {
+            isLogin = !isLogin;
+            const regFields = document.getElementById('regFields');
+            const title = document.getElementById('title');
+            const mainBtn = document.getElementById('mainBtn');
+            const switchMsg = document.getElementById('switchMsg');
+            const switchBtn = document.getElementById('switchBtn');
+            const forgetBtn = document.getElementById('forgetBtn');
+
+            if (isLogin) {
+                title.innerText = "লগইন";
+                regFields.style.display = "none";
+                mainBtn.innerText = "প্রবেশ করুন";
+                switchMsg.innerText = "অ্যাকাউন্ট নেই?";
+                switchBtn.innerText = "রেজিস্ট্রেশন করুন";
+                forgetBtn.style.display = "block";
+            } else {
+                title.innerText = "রেজিস্ট্রেশন";
+                regFields.style.display = "block";
+                mainBtn.innerText = "অ্যাকাউন্ট খুলুন";
+                switchMsg.innerText = "অ্যাকাউন্ট আছে?";
+                switchBtn.innerText = "লগইন করুন";
+                forgetBtn.style.display = "none";
+            }
+        }
+
+        function handleAuth() {
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+
+            if (!phone) return alert("নম্বর দিন!");
+            if (!password && isLogin) return alert("পাসওয়ার্ড দিন!");
+
+            if (isLogin) {
+                db.ref('users/' + phone).once('value', (s) => {
+                    if (s.exists()) {
+                        if (s.val().password === password) {
+                            localStorage.setItem("savedUser", phone);
+                            localStorage.setItem("isLoggedIn", "true");
+                            window.location.replace("dashboard.html");
+                        } else {
+                            alert("ভুল পাসওয়ার্ড!");
+                        }
+                    } else {
+                        alert("অ্যাকাউন্ট পাওয়া যায়নি!");
+                    }
+                });
+            } else {
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                if (!name || !email || !password) return alert("সব তথ্য দিন!");
+
+                db.ref('users/' + phone).set({
+                    phone, name, email, password, balance: 0
+                }).then(() => {
+                    localStorage.setItem("savedUser", phone);
+                    localStorage.setItem("isLoggedIn", "true");
+                    alert("রেজিস্ট্রেশন সফল!");
+                    window.location.replace("dashboard.html");
+                });
+            }
+        }
+
+        // পাসওয়ার্ড রিকভারি ফাংশন
+        function forgetPassword() {
+            const phone = document.getElementById('phone').value;
+            if (!phone) {
+                alert("আপনার মোবাইল নম্বরটি দিন (ইউজারনেম বক্সে) তারপর এখানে ক্লিক করুন।");
                 return;
             }
 
-            // রিয়েল-টাইম ব্যালেন্স আপডেট
-            db.ref('users/' + userPhone).on('value', (s) => {
+            db.ref('users/' + phone).once('value', (s) => {
                 if (s.exists()) {
-                    document.getElementById('welcomeMsg').innerText = "স্বাগতম, " + (s.val().name || userPhone);
-                    const bal = s.val().balance || 0;
-                    document.getElementById('uBalance').innerText = "৳ " + bal.toLocaleString();
+                    const pass = s.val().password;
+                    alert("আপনার পুরনো পাসওয়ার্ড হলো: " + pass);
                 } else {
-                    // যদি ইউজার ডাটাবেস থেকে ডিলিট হয়ে যায়
-                    logoutUser();
+                    alert("এই নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি!");
                 }
             });
-        }
-
-        function logoutUser() { 
-            localStorage.setItem("isLoggedIn", "false"); 
-            localStorage.removeItem("savedUser");
-            window.location.replace("login.html"); 
-        }
-
-        function downloadAPK() {
-            const apkUrl = "app-release.apk"; 
-            const link = document.createElement('a');
-            link.href = apkUrl;
-            link.download = "QuickPayBD.apk";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            alert("আপনার ডাউনলোড শুরু হয়েছে!");
         }
     </script>
 </body>
