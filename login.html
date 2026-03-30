@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>লগইন - কুইকপে</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; width: 100%; max-width: 350px; padding: 30px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
+        h2 { color: #1e3799; margin-bottom: 20px; }
+        label { display: block; text-align: left; font-size: 13px; color: #666; margin-left: 5px; margin-top: 10px; }
+        input { width: 100%; padding: 12px; margin: 5px 0 15px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; outline: none; background: #f9f9f9; }
+        /* ইউজারনেম বক্সটি একটু হালকা রঙের করা হয়েছে যাতে বোঝা যায় এটি সেভ করা */
+        #lId { background: #eef2f3; color: #555; font-weight: bold; }
+        .btn { width: 100%; padding: 15px; background: #1e3799; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .forgot { margin-top: 15px; font-size: 13px; color: #e74c3c; cursor: pointer; display: block; font-weight: bold; }
+    </style>
+</head>
+<body onload="loadSavedData()">
+
+<div class="card">
+    <h2>লগইন করুন</h2>
+    
+    <label>আপনার ইউজারনেম/নম্বর (সেভ করা)</label>
+    <input type="text" id="lId" placeholder="নম্বর বা ইমেইল" readonly>
+    
+    <label>পাসওয়ার্ড দিন</label>
+    <input type="password" id="lPass" placeholder="৬ অক্ষরের পাসওয়ার্ড" maxlength="6">
+    
+    <button class="btn" onclick="processLogin()">প্রবেশ করুন</button>
+    
+    <span class="forgot" onclick="showPass()">পাসওয়ার্ড ভুলে গেছেন?</span>
+</div>
+
+<script>
+    // অ্যাপ ওপেন হলেই ফোনের মেমোরি থেকে ইউজারনেম লোড করবে
+    function loadSavedData() {
+        const savedUser = localStorage.getItem('savedUser');
+        if (savedUser) {
+            document.getElementById('lId').value = savedUser;
+        } else {
+            // যদি কোনো ইউজারনেম সেভ না থাকে তবে রেজিস্ট্রেশন পেজে পাঠাবে
+            alert("প্রথমে একটি অ্যাকাউন্ট তৈরি করুন!");
+            window.location.href = "register.html";
+        }
+    }
+
+    function processLogin() {
+        const inputPass = document.getElementById('lPass').value;
+        const correctPass = localStorage.getItem('savedPass');
+
+        if (inputPass === "") {
+            alert("পাসওয়ার্ড লিখুন!");
+            return;
+        }
+
+        // শুধুমাত্র পাসওয়ার্ড চেক করবে
+        if (inputPass === correctPass) {
+            localStorage.setItem("isLoggedIn", "true");
+            window.location.replace("index.html");
+        } else {
+            alert("ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।");
+        }
+    }
+
+    function showPass() {
+        const savedPass = localStorage.getItem('savedPass');
+        alert("আপনার সেভ করা পাসওয়ার্ড হলো: " + savedPass);
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - QuickPay BD</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .box { background: white; max-width: 500px; margin: 0 auto 20px auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { color: #1e3799; text-align: center; }
+        h3 { font-size: 18px; margin-top: 0; color: #333; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
+        .btn-add { background: #27ae60; margin-top: 5px; }
+        .btn-sub { background: #e74c3c; margin-top: 10px; }
+        .btn-update { background: #1e3799; }
+        
+        .user-list-box { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; }
+        .user-list { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        .user-list th, .user-list td { border: 1px solid #eee; padding: 12px; text-align: left; }
+        .user-list th { background: #1e3799; color: white; }
+        .refresh-btn { background: #8e44ad; width: auto; padding: 8px 15px; margin-bottom: 10px; }
+        .balance-badge { background: #e8f0fe; color: #1e3799; padding: 4px 8px; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2><i class="fas fa-user-shield"></i> অ্যাডমিন কন্ট্রোল প্যানেল</h2>
+
+    <div class="box">
+        <h3><i class="fas fa-coins"></i> ব্যালেন্স ম্যানেজমেন্ট</h3>
+        <input type="text" id="uPhone" placeholder="ইউজার নম্বর দিন (যেমন: 017xxx)">
+        <input type="number" id="uAmt" placeholder="টাকার পরিমাণ (৳)">
+        <button class="btn-add" onclick="changeBal('add')"><i class="fas fa-plus-circle"></i> টাকা যোগ করুন (মেইন ব্যালেন্স)</button>
+        <button class="btn-sub" onclick="changeBal('sub')"><i class="fas fa-minus-circle"></i> টাকা কেটে নিন (মাইনাস)</button>
+    </div>
+
+    <div class="box">
+        <h3><i class="fas fa-wallet"></i> পেমেন্ট নম্বর সেটআপ</h3>
+        <input type="text" id="newBk" placeholder="নতুন বিকাশ নম্বর">
+        <input type="text" id="newNg" placeholder="নতুন নগদ নম্বর">
+        <button class="btn-update" onclick="updateNumbers()">নম্বর আপডেট করুন</button>
+    </div>
+
+    <div class="user-list-box">
+        <h3><i class="fas fa-users"></i> ইউজার লিস্ট ও বর্তমান ব্যালেন্স</h3>
+        <button class="refresh-btn" onclick="loadUsers()"><i class="fas fa-sync"></i> রিফ্রেশ লিস্ট</button>
+        <table class="user-list">
+            <thead>
+                <tr>
+                    <th>নম্বর/ID</th>
+                    <th>নাম</th>
+                    <th>মেইন ব্যালেন্স</th>
+                </tr>
+            </thead>
+            <tbody id="userTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // ফায়ারবেস কানেকশন
+        const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // ১. মেইন ব্যালেন্স পরিবর্তন ফাংশন
+        function changeBal(type) {
+            const phone = document.getElementById('uPhone').value.trim();
+            const amount = parseFloat(document.getElementById('uAmt').value);
+            
+            if(!phone || isNaN(amount)) {
+                return alert("সঠিক ইউজার নম্বর এবং টাকার পরিমাণ লিখুন!");
+            }
+
+            const userRef = db.ref('users/' + phone);
+            
+            userRef.once('value').then((snapshot) => {
+                if(snapshot.exists()) {
+                    let currentBal = parseFloat(snapshot.val().balance) || 0;
+                    let finalBal = (type === 'add') ? (currentBal + amount) : (currentBal - amount);
+                    
+                    if (finalBal < 0) finalBal = 0; // ব্যালেন্স মাইনাস হওয়া ঠেকাবে
+
+                    userRef.update({ balance: finalBal }).then(() => {
+                        alert(`সফল হয়েছে!\nইউজার: ${phone}\nপূর্বের ব্যালেন্স: ${currentBal}\nবর্তমান ব্যালেন্স: ${finalBal}`);
+                        document.getElementById('uAmt').value = ""; // ক্লিয়ার ইনপুট
+                        loadUsers(); // লিস্ট আপডেট
+                    });
+                } else {
+                    alert("দুঃখিত! এই নম্বরে কোনো ইউজার অ্যাকাউন্ট পাওয়া যায়নি।");
+                }
+            }).catch(err => alert("Error: " + err.message));
+        }
+
+        // ২. বিকাশ/নগদ নম্বর আপডেট
+        function updateNumbers() {
+            const bk = document.getElementById('newBk').value.trim();
+            const ng = document.getElementById('newNg').value.trim();
+            
+            if(!bk && !ng) return alert("অন্তত একটি নম্বর দিন!");
+
+            let updates = {};
+            if(bk) updates['bkash_number'] = bk;
+            if(ng) updates['nagad_number'] = ng;
+
+            db.ref().update(updates).then(() => {
+                alert("পেমেন্ট নম্বর আপডেট হয়েছে!");
+                document.getElementById('newBk').value = "";
+                document.getElementById('newNg').value = "";
+            });
+        }
+
+        // ৩. রিয়েল-টাইম ইউজার লিস্ট লোড
+        function loadUsers() {
+            const table = document.getElementById('userTable');
+            table.innerHTML = "<tr><td colspan='3' style='text-align:center;'>লোড হচ্ছে...</td></tr>";
+            
+            db.ref('users').once('value', (snapshot) => {
+                table.innerHTML = "";
+                if(!snapshot.exists()) {
+                    table.innerHTML = "<tr><td colspan='3' style='text-align:center;'>কোনো ইউজার নেই</td></tr>";
+                    return;
+                }
+                
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    const row = `<tr>
+                        <td><b>${child.key}</b></td>
+                        <td>${data.name || 'User'}</td>
+                        <td><span class="balance-badge">৳ ${data.balance || 0}</span></td>
+                    </tr>`;
+                    table.innerHTML += row;
+                });
+            });
+        }
+
+        // পেজ লোড হলে লিস্ট দেখাবে
+        window.onload = loadUsers;
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>রেজিস্ট্রেশন - কুইকপে</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; width: 100%; max-width: 350px; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #1e3799; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; outline: none; }
+        .btn { width: 100%; padding: 15px; background: #1e3799; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        #otpBox { display: none; margin-top: 20px; text-align: center; background: #e8f0fe; padding: 15px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>নতুন অ্যাকাউন্ট</h2>
+    <input type="text" id="uName" placeholder="আপনার নাম">
+    <input type="text" id="uIdentifier" placeholder="নম্বর অথবা ইমেইল">
+    <input type="password" id="uPass" placeholder="৬ অক্ষরের পাসওয়ার্ড" maxlength="6">
+    <button id="otpBtn" class="btn" onclick="sendOTP()">OTP পাঠান</button>
+
+    <div id="otpBox">
+        <p>কোডটি লিখুন: <b id="genOtpText" style="color:red; font-size:20px;"></b></p>
+        <input type="number" id="inputOtp" placeholder="OTP দিন">
+        <button class="btn" style="background:#27ae60;" onclick="finishReg()">নিশ্চিত করুন</button>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let myOtp;
+
+    function sendOTP() {
+        if(document.getElementById('uName').value==="" || document.getElementById('uPass').value.length!==6) {
+            alert("সব ঘর পূরণ করুন এবং পাসওয়ার্ড ৬ অক্ষরের দিন!"); return;
+        }
+        myOtp = Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('genOtpText').innerText = myOtp;
+        document.getElementById('otpBox').style.display = "block";
+        document.getElementById('otpBtn').style.display = "none";
+    }
+
+    function finishReg() {
+        if(document.getElementById('inputOtp').value == myOtp) {
+            const name = document.getElementById('uName').value;
+            const iden = document.getElementById('uIdentifier').value;
+            const pass = document.getElementById('uPass').value;
+
+            // ফায়ারবেসে তথ্য রাখা
+            db.ref('users/' + iden).set({
+                name: name,
+                username: iden,
+                password: pass,
+                balance: 0
+            }).then(() => {
+                // ফোনে সেভ করা
+                localStorage.setItem("savedUser", iden);
+                localStorage.setItem("savedPass", pass);
+                localStorage.setItem("isLoggedIn", "false"); // এখনও লগইন হয়নি
+
+                // সরাসরি লগইন পেজে পাঠানো
+                window.location.href = "login.html";
+            });
+        } else { alert("ভুল OTP!"); }
+    }
+</script>
+</body>
+</html>

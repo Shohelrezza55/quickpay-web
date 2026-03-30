@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1Xbet - কুইকপে</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f1f2f6; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { color: #1e3799; text-align: center; margin-bottom: 10px; }
+        .balance-box { text-align: center; background: #e8f0fe; padding: 10px; border-radius: 10px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; outline: none; font-size: 16px; }
+        input:focus { border-color: #1e3799; }
+        .btn { width: 100%; padding: 15px; background: #1e3799; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2><i class="fas fa-gamepad"></i> 1Xbet ডিপোজিট</h2>
+    
+    <div class="balance-box">
+        <p style="margin:0; font-size: 14px; color: #555;">আপনার বর্তমান ব্যালেন্স</p>
+        <h3 style="margin:5px 0; color: #27ae60;" id="curBal">৳ ০.০০</h3>
+    </div>
+
+    <input type="number" id="betId" placeholder="আপনার 1Xbet ID লিখুন">
+    <input type="number" id="betAmount" placeholder="টাকার পরিমাণ (৳)">
+    
+    <button class="btn" id="submitBtn" onclick="sendReq()">সাবমিট করুন</button>
+    
+    <p style="text-align:center; margin-top:15px;">
+        <a href="index.html" style="text-decoration:none; color:#1e3799; font-weight:bold;"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
+    </p>
+</div>
+
+<script>
+    // ফায়ারবেস কানেকশন
+    const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ইউজার ফোন নম্বর (লোকাল স্টোরেজ থেকে)
+    const userPhone = localStorage.getItem("savedUser") || "Unknown";
+    let currentBal = 0;
+
+    // মেইন ব্যালেন্স রিয়েল-টাইম আপডেট
+    db.ref('users/' + userPhone).on('value', (s) => {
+        if(s.exists()){ 
+            currentBal = parseFloat(s.val().balance) || 0; 
+            document.getElementById('curBal').innerText = "৳ " + currentBal.toFixed(2); 
+        }
+    });
+
+    async function sendReq() {
+        const id = document.getElementById('betId').value.trim();
+        const amt = parseFloat(document.getElementById('betAmount').value);
+        const submitBtn = document.getElementById('submitBtn');
+
+        // ভ্যালিডেশন
+        if(!id || isNaN(amt) || amt <= 0) { 
+            alert("সঠিক আইডি এবং টাকার পরিমাণ দিন!"); 
+            return; 
+        }
+        if(amt > currentBal) { 
+            alert("আপনার পর্যাপ্ত ব্যালেন্স নেই!"); 
+            return; 
+        }
+
+        // বাটন ডিজেবল করা
+        submitBtn.disabled = true;
+        submitBtn.innerText = "প্রসেসিং...";
+
+        try {
+            // ১. ফায়ারবেসে ব্যালেন্স আপডেট করা (টাকা কেটে নেওয়া)
+            const newBal = currentBal - amt;
+            await db.ref('users/' + userPhone).update({ balance: newBal });
+
+            // ২. টেলিগ্রামে মেসেজ পাঠানো
+            const botToken = "8493207328:AAGTpvGw5C-wa2lpMANjOXNxHX1ro_AKs6Q";
+            const chatId = "6875220034";
+            const msg = `🎮 **নতুন 1Xbet রিকোয়েস্ট!**\n\n👤 ইউজার: ${userPhone}\n🆔 1Xbet ID: ${id}\n💵 টাকার পরিমাণ: ${amt} ৳\n📉 নতুন ব্যালেন্স: ${newBal} ৳\n⏰ সময়: ${new Date().toLocaleString('bn-BD')}`;
+
+            const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}&parse_mode=Markdown`);
+
+            if(res.ok) {
+                alert("আপনার ডিপোজিট রিকোয়েস্টটি সফলভাবে পাঠানো হয়েছে!");
+                window.location.href = "index.html";
+            } else {
+                throw new Error("Telegram error");
+            }
+
+        } catch (e) {
+            alert("দুঃখিত! কোনো সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "সাবমিট করুন";
+        }
+    }
+</script>
+</body>
+</html>

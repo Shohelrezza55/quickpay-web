@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ডিপোজিট - কুইকপে</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f2f6; margin: 0; padding: 20px; }
+        .card { background: white; max-width: 400px; margin: auto; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { color: #1e3799; text-align: center; margin-bottom: 5px; }
+        .subtitle { font-size: 12px; text-align: center; color: #ff4757; margin-bottom: 20px; font-weight: bold; }
+        
+        .admin-number { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 2px dashed #1e3799; cursor: pointer; position: relative; transition: 0.3s; }
+        .admin-number:active { transform: scale(0.98); background: #f0f3ff; }
+        .admin-number p { margin: 5px 0; font-weight: bold; color: #2c3e50; }
+        .copy-tag { position: absolute; right: 10px; top: 10px; font-size: 10px; color: #1e3799; background: #e8f0fe; padding: 2px 8px; border-radius: 5px; }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; outline: none; font-size: 14px; }
+        input:focus { border-color: #1e3799; }
+        
+        .file-label { display: block; margin-top: 10px; font-size: 13px; color: #666; font-weight: bold; }
+        .btn-send { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 20px; transition: 0.3s; }
+        .btn-send:disabled { background: #95a5a6; cursor: not-allowed; }
+        
+        .back-link { display: block; text-align: center; margin-top: 20px; color: #1e3799; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>টাকা জমা দিন</h2>
+    <p class="subtitle">নম্বরের উপর ক্লিক করলে কপি হয়ে যাবে</p>
+
+    <div class="admin-number" onclick="copyText('bkashNum', 'বিকাশ')">
+        <span class="copy-tag"><i class="fas fa-copy"></i> কপি</span>
+        <p><i class="fas fa-wallet" style="color: #d1127d;"></i> বিকাশ (Personal)</p>
+        <p id="bkashNum">লোডিং...</p>
+    </div>
+
+    <div class="admin-number" onclick="copyText('nagadNum', 'নগদ')">
+        <span class="copy-tag"><i class="fas fa-copy"></i> কপি</span>
+        <p><i class="fas fa-money-bill-wave" style="color: #f7941d;"></i> নগদ (Personal)</p>
+        <p id="nagadNum">লোডিং...</p>
+    </div>
+
+    <hr style="border: 0.5px solid #eee; margin: 20px 0;">
+
+    <input type="number" id="amount" placeholder="কত টাকা পাঠিয়েছেন?">
+    <input type="text" id="trxId" placeholder="TrxID (ট্রানজ্যাকশন আইডি)">
+    
+    <label class="file-label">পেমেন্টের স্ক্রিনশট আপলোড করুন:</label>
+    <input type="file" id="screenshot" accept="image/*">
+    
+    <button class="btn-send" id="submitBtn" onclick="sendToTelegram()">রিকোয়েস্ট পাঠান</button>
+    <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> ড্যাশবোর্ড ফিরে যান</a>
+</div>
+
+<script>
+    // ফায়ারবেস কনফিগারেশন
+    const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // অ্যাডমিন নম্বর রিয়েল-টাইম আপডেট
+    database.ref('bkash_number').on('value', (s) => { document.getElementById('bkashNum').innerText = s.val() || "সেট করা নেই"; });
+    database.ref('nagad_number').on('value', (s) => { document.getElementById('nagadNum').innerText = s.val() || "সেট করা নেই"; });
+
+    // কপি ফাংশন
+    function copyText(elementId, type) {
+        const num = document.getElementById(elementId).innerText;
+        if(num === "লোডিং..." || num === "সেট করা নেই") return;
+        navigator.clipboard.writeText(num);
+        alert(type + " নম্বর কপি হয়েছে: " + num);
+    }
+
+    // টেলিগ্রামে ডাটা পাঠানোর মেইন ফাংশন
+    async function sendToTelegram() {
+        const botToken = "8493207328:AAGTpvGw5C-wa2lpMANjOXNxHX1ro_AKs6Q";
+        const chatId = "6875220034";
+        
+        const amount = document.getElementById('amount').value;
+        const trxId = document.getElementById('trxId').value;
+        const fileInput = document.getElementById('screenshot');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // লোকাল স্টোরেজ থেকে ইউজার আইডি বা নাম নেওয়া
+        const user = localStorage.getItem("savedUser") || "Unknown User";
+
+        if(!amount || !trxId || fileInput.files.length === 0) {
+            alert("অনুগ্রহ করে সব তথ্য এবং স্ক্রিনশট দিন!");
+            return;
+        }
+
+        // বাটন ডিজেবল করা যাতে বারবার ক্লিক না হয়
+        submitBtn.disabled = true;
+        submitBtn.innerText = "প্রসেসিং হচ্ছে...";
+
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('photo', fileInput.files[0]);
+        formData.append('caption', `💰 **নতুন ডিপোজিট রিকোয়েস্ট!**\n\n👤 ইউজার: ${user}\n💵 পরিমাণ: ${amount} টাকা\n🔑 TrxID: ${trxId}\n📅 সময়: ${new Date().toLocaleString('bn-BD')}`);
+
+        try {
+            const response = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if(response.ok) {
+                alert("আপনার রিকোয়েস্টটি সফলভাবে অ্যাডমিনের কাছে পাঠানো হয়েছে!");
+                window.location.href = "index.html";
+            } else {
+                throw new Error("Failed");
+            }
+        } catch (error) {
+            alert("দুঃখিত! কোনো সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "রিকোয়েস্ট পাঠান";
+        }
+    }
+</script>
+
+</body>
+</html>

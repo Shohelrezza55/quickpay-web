@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service & History - QuickPay</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: sans-serif; background: #f1f2f6; margin: 0; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        .service-btn { display: flex; align-items: center; justify-content: center; background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 12px; text-decoration: none; color: #333; font-weight: bold; border: 1px solid #ddd; }
+        .service-btn i { font-size: 24px; margin-right: 15px; }
+        .history-box { text-align: left; background: #fff; padding: 15px; border-radius: 15px; }
+        .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 14px; }
+        .history-item span { float: right; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h3 style="color:#1e3799;">কাস্টমার সাপোর্ট</h3>
+        <p style="font-size: 13px; color: #666;">যেকোনো প্রয়োজনে আমাদের সাথে যোগাযোগ করুন</p>
+        
+        <a href="https://t.me/veryfreetips" class="service-btn">
+            <i class="fab fa-telegram" style="color:#0088cc;"></i> টেলিগ্রাম চ্যানেল
+        </a>
+        <a href="https://t.me/PZEEDMIR" class="service-btn">
+            <i class="fas fa-headset" style="color:#24A1DE;"></i> অ্যাডমিন (পার্সোনাল)
+        </a>
+        <a href="https://m.me/100068273520772" class="service-btn">
+            <i class="fab fa-facebook-messenger" style="color:#006AFF;"></i> মেসেঞ্জার সাপোর্ট
+        </a>
+    </div>
+
+    <div class="card">
+        <h3 style="color:#1e3799;">লেনদেন হিস্ট্রি</h3>
+        <div class="history-box" id="historyList">
+            <p style="text-align:center; color:#888;">কোনো হিস্ট্রি পাওয়া যায়নি</p>
+        </div>
+    </div>
+
+    <a href="index.html" style="display:block; text-align:center; color:#666; text-decoration:none; font-weight:bold;">ফিরে যান</a>
+
+</body>
+</html>
