@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - QuickPay</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #050a18; font-family: 'Poppins', sans-serif; margin: 0; color: white; padding-bottom: 30px; }
+        .top { background: linear-gradient(to bottom, #101827, #050a18); padding: 30px; text-align: center; border-bottom: 2px solid #00f2ff; }
+        .balance-card { background: rgba(255,255,255,0.05); margin: 20px; padding: 25px; border-radius: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .balance-card h1 { font-size: 40px; color: #39ff14; text-shadow: 0 0 10px #39ff14; margin: 10px 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
+        .item { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 20px; text-align: center; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.1); }
+        .item i { font-size: 30px; margin-bottom: 10px; display: block; }
+        .sup-btn { display: flex; align-items: center; justify-content: center; padding: 15px; border-radius: 15px; text-decoration: none; color: white; font-weight: bold; margin: 10px 20px; border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body onload="init()">
+    <div class="top"><h2 id="msg">লোড হচ্ছে...</h2></div>
+    <div class="balance-card"><span>ব্যালেন্স</span><h1 id="bal">৳ ০.০০</h1></div>
+    <div class="grid">
+        <a href="deposit.html" class="item"><i class="fas fa-wallet" style="color:#39ff14"></i>Deposit</a>
+        <a href="xbet_transfer.html" class="item"><i class="fas fa-exchange-alt" style="color:#00f2ff"></i>1xBet Load</a>
+        <a href="withdraw_money.html" class="item" style="grid-column: span 2;"><i class="fas fa-coins" style="color:#ff00e0"></i>Withdraw Money</a>
+    </div>
+    <div style="margin:20px; background:linear-gradient(45deg, #ff3131, #ff00e0); padding:15px; border-radius:15px; text-align:center; font-weight:bold;">PROMO: 1x74643 (100% Bonus)</div>
+    <div class="support">
+        <a href="https://m.me/100068273520772" class="sup-btn" style="background:#0078ff"><i class="fab fa-facebook-messenger"></i> Messenger</a>
+        <a href="https://t.me/PZEEDMIR" class="sup-btn" style="background:#0088cc"><i class="fab fa-telegram-plane"></i> Admin Telegram</a>
+        <a href="https://t.me/veryfreetips" class="sup-btn" style="background:#004085"><i class="fas fa-bullhorn"></i> Join Channel</a>
+    </div>
+    <p onclick="logout()" style="text-align:center; color:#ff3131; cursor:pointer; font-weight:bold; margin-top:30px;">লগআউট</p>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function init() {
+            const p = localStorage.getItem("savedUser");
+            if(!p || localStorage.getItem("isLoggedIn") !== "true") return window.location.replace("index.html");
+            db.ref('users/'+p).on('value', s => {
+                if(s.exists()){
+                    document.getElementById('msg').innerText = "স্বাগতম, " + s.val().name;
+                    document.getElementById('bal').innerText = "৳ " + (s.val().balance || 0).toLocaleString();
+                }
+            });
+        }
+        function logout() { localStorage.clear(); window.location.replace("index.html"); }
+    </script>
+</body>
+</html>
