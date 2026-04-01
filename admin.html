@@ -19,6 +19,8 @@
         .btn-update { background: #1e3799; }
         .btn-notice { background: #00f2ff; color: #000; }
         
+        /* নতুন রিকোয়েস্ট টেবিল স্টাইল */
+        .request-box { max-width: 850px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 15px; border-left: 5px solid #27ae60; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .user-list-box { max-width: 850px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .user-list { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         .user-list th, .user-list td { border: 1px solid #eee; padding: 12px; text-align: left; }
@@ -26,12 +28,31 @@
         .refresh-btn { background: #8e44ad; width: auto; padding: 8px 15px; margin-bottom: 10px; }
         .balance-badge { background: #e8f0fe; color: #1e3799; padding: 4px 8px; border-radius: 5px; font-weight: bold; }
         .del-btn { background: #ff3131; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; border: none; cursor: pointer; }
-        .del-btn:hover { background: #cc0000; }
+        .approve-btn { background: #27ae60; color: white; padding: 5px 10px; border-radius: 5px; border: none; cursor: pointer; margin-right: 5px; }
     </style>
 </head>
 <body>
 
     <h2><i class="fas fa-user-shield"></i> অ্যাডমিন কন্ট্রোল প্যানেল</h2>
+
+    <div class="request-box">
+        <h3><i class="fas fa-bell"></i> পেন্ডিং ডিপোজিট রিকোয়েস্ট</h3>
+        <div style="overflow-x: auto;">
+            <table class="user-list">
+                <thead>
+                    <tr>
+                        <th>ইউজার/সময়</th>
+                        <th>পরিমাণ</th>
+                        <th>TrxID/মেথড</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="requestTable">
+                    <tr><td colspan="4" style="text-align:center;">রিকোয়েস্ট চেক করা হচ্ছে...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <div class="box" style="background: #101827; border: 1px solid #00f2ff;">
         <h3 style="color: #00f2ff;">অ্যাডমিন নোটিশ আপডেট</h3>
@@ -57,7 +78,7 @@
 
     <div class="user-list-box">
         <h3><i class="fas fa-users"></i> ইউজার লিস্ট ও কন্ট্রোল</h3>
-        <button class="refresh-btn" onclick="loadUsers()"><i class="fas fa-sync"></i> রিফ্রেশ লিস্ট</button>
+        <button class="refresh-btn" onclick="loadAllData()"><i class="fas fa-sync"></i> রিফ্রেশ ডাটা</button>
         <table class="user-list">
             <thead>
                 <tr>
@@ -76,7 +97,71 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // নোটিশ আপডেট
+        // ১-ক্লিক ডিপোজিট রিকোয়েস্ট লোড করা
+        function loadRequests() {
+            const table = document.getElementById('requestTable');
+            db.ref('deposits').on('value', (snapshot) => {
+                table.innerHTML = "";
+                if(!snapshot.exists()) {
+                    table.innerHTML = "<tr><td colspan='4' style='text-align:center;'>কোনো পেন্ডিং রিকোয়েস্ট নেই</td></tr>";
+                    return;
+                }
+                
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    const reqKey = child.key;
+                    if(data.status === "pending") {
+                        table.innerHTML += `
+                        <tr>
+                            <td><b>${data.user}</b><br><small>${data.time || ''}</small></td>
+                            <td><span class="balance-badge">৳ ${data.amount}</span></td>
+                            <td><b>${data.txid}</b><br><small>${data.method} (${data.sender})</small></td>
+                            <td>
+                                <button class="approve-btn" onclick="approveDeposit('${reqKey}', '${data.user}', ${data.amount})">Approve ✅</button>
+                                <button class="del-btn" onclick="deleteRequest('${reqKey}')">Reject ❌</button>
+                            </td>
+                        </tr>`;
+                    }
+                });
+            });
+        }
+
+        // রিকোয়েস্ট অ্যাপ্রুভ করার মেইন ফাংশন
+        function approveDeposit(key, phone, amt) {
+            if(!confirm("আপনি কি নিশ্চিতভাবে এই " + amt + " টাকা অ্যাপ্রুভ করতে চান?")) return;
+
+            const userRef = db.ref('users/' + phone);
+            userRef.once('value').then(s => {
+                if(s.exists()){
+                    let currentBal = parseFloat(s.val().balance || 0);
+                    let newBal = currentBal + parseFloat(amt);
+
+                    // ব্যালেন্স আপডেট
+                    userRef.update({ balance: newBal }).then(() => {
+                        // লেনদেনের ইতিহাসে সেভ
+                        db.ref('transactions/' + phone).push({
+                            type: "Deposit Approved",
+                            amount: parseFloat(amt),
+                            date: new Date().toLocaleDateString('bn-BD') + " " + new Date().toLocaleTimeString('bn-BD', {hour: '2-digit', minute:'2-digit'})
+                        });
+
+                        // রিকোয়েস্টটি মুছে ফেলা
+                        db.ref('deposits/' + key).remove();
+                        alert("সফল! ব্যালেন্স অ্যাড হয়েছে।");
+                    });
+                } else {
+                    alert("ইউজার পাওয়া যায়নি! রিকোয়েস্টটি ডিলিট করে দিন।");
+                }
+            });
+        }
+
+        // রিকোয়েস্ট ডিলিট/রিজেক্ট করা
+        function deleteRequest(key) {
+            if(confirm("রিকোয়েস্টটি রিজেক্ট বা ডিলিট করতে চান?")) {
+                db.ref('deposits/' + key).remove();
+            }
+        }
+
         function updateNotice() {
             const notice = document.getElementById('noticeInput').value;
             if (!notice) return alert("নোটিশ লিখুন!");
@@ -87,7 +172,6 @@
             });
         }
 
-        // ব্যালেন্স পরিবর্তন এবং ইতিহাস সেভ
         function changeBal(type) {
             const phone = document.getElementById('uPhone').value.trim();
             const amount = parseFloat(document.getElementById('uAmt').value);
@@ -98,69 +182,61 @@
                 if(s.exists()) {
                     let oldBal = parseFloat(s.val().balance || 0);
                     let newBal = (type === 'add') ? (oldBal + amount) : (oldBal - amount);
-                    
-                    // ১. ব্যালেন্স আপডেট
                     userRef.update({ balance: Math.max(0, newBal) }).then(() => {
-                        
-                        // ২. লেনদেনের ইতিহাস (History) সেভ করা
-                        const historyRef = db.ref('transactions/' + phone);
-                        historyRef.push({
+                        db.ref('transactions/' + phone).push({
                             type: (type === 'add') ? "Cash In" : "Cash Out",
                             amount: (type === 'add') ? amount : -amount,
                             date: new Date().toLocaleDateString('bn-BD') + " " + new Date().toLocaleTimeString('bn-BD', {hour: '2-digit', minute:'2-digit'})
-                        }).then(() => {
-                            alert("সফল হয়েছে!\nইউজারের বর্তমান ব্যালেন্স: ৳" + Math.max(0, newBal));
-                            document.getElementById('uAmt').value = ""; 
-                            loadUsers();
                         });
-
+                        alert("সফল হয়েছে!");
+                        document.getElementById('uAmt').value = ""; 
                     });
                 } else { alert("ইউজার পাওয়া যায়নি!"); }
             });
         }
 
-        // পেমেন্ট নম্বর আপডেট
         function updateNumbers() {
             const bk = document.getElementById('newBk').value.trim();
             const ng = document.getElementById('newNg').value.trim();
             let up = {}; if(bk) up['bkash_number'] = bk; if(ng) up['nagad_number'] = ng;
-            db.ref().update(up).then(() => alert("আপডেট হয়েছে!"));
+            // আপনার admin_settings পাথ অনুযায়ী আপডেট হবে
+            db.ref('admin_settings').update({ bkash: bk, nagad: ng }).then(() => alert("নম্বর আপডেট হয়েছে!"));
         }
 
-        // ইউজার ডিলিট করার ফাংশন (লিস্ট থেকে)
         function removeUser(phone) {
             if(confirm("আপনি কি নিশ্চিতভাবে " + phone + " ইউজারকে ডিলিট করতে চান?")) {
                 db.ref('users/' + phone).remove().then(() => {
-                    db.ref('transactions/' + phone).remove(); // হিস্ট্রিও ডিলিট
+                    db.ref('transactions/' + phone).remove();
                     alert("ইউজার সফলভাবে রিমুভ হয়েছে!");
-                    loadUsers(); // লিস্ট আপডেট
                 });
             }
         }
 
-        // ইউজার লিস্ট লোড (ডিলিট বাটনসহ)
         function loadUsers() {
             const table = document.getElementById('userTable');
-            table.innerHTML = "<tr><td colspan='4' style='text-align:center;'>লোড হচ্ছে...</td></tr>";
-            db.ref('users').once('value', (snapshot) => {
+            db.ref('users').on('value', (snapshot) => {
                 table.innerHTML = "";
-                if(!snapshot.exists()) return table.innerHTML = "<tr><td colspan='4'>কোনো ইউজার নেই</td></tr>";
-                
+                if(!snapshot.exists()) return;
                 snapshot.forEach((child) => {
                     const data = child.val();
-                    const phone = child.key;
                     table.innerHTML += `<tr>
-                        <td><b>${phone}</b></td>
+                        <td><b>${child.key}</b></td>
                         <td>${data.name || 'User'}</td>
                         <td><span class="balance-badge">৳ ${data.balance || 0}</span></td>
-                        <td><button class="del-btn" onclick="removeUser('${phone}')"><i class="fas fa-trash"></i> ডিলিট</button></td>
+                        <td><button class="del-btn" onclick="removeUser('${child.key}')">ডিলিট</button></td>
                     </tr>`;
                 });
             });
         }
 
-        window.onload = loadUsers;
+        function loadAllData() {
+            loadUsers();
+            loadRequests();
+        }
+
+        window.onload = loadAllData;
     </script>
 </body>
 </html>
+
 
