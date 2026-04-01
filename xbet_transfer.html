@@ -24,12 +24,12 @@
     </div>
 
     <script>
-        // ১. ফায়ারবেস কনফিগ (আপনার ডাটাবেস ইউআরএল)
+        // ফায়ারবেস কনফিগ
         const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ২. আপনার নতুন টেলিগ্রাম বট তথ্য
+        // টেলিগ্রাম বট তথ্য
         const botToken = "8493207328:AAGTpvGw5C-wa2lpMANjOXNxHX1ro_AKs6Q";
         const chatId = "6875220034";
 
@@ -48,21 +48,31 @@
                 const currentBal = s.val().balance || 0;
 
                 if(currentBal >= amount) {
-                    // ৪. ব্যালেন্স কাটা (Update Database)
+                    // ৪. ব্যালেন্স কাটা
                     const newBal = currentBal - amount;
                     db.ref('users/' + user).update({ balance: newBal }).then(() => {
                         
-                        // ৫. টেলিগ্রাম নোটিফিকেশন পাঠানো
-                        const message = `🎮 **নতুন ১এক্সবেট লোড রিকোয়েস্ট!**\n\n👤 ইউজার: ${user}\n🆔 ১এক্সবেট আইডি: ${xbetId}\n💵 পরিমাণ: ${amount} ৳\n✅ স্ট্যাটাস: ব্যালেন্স কাটা হয়েছে।`;
+                        // --- নতুন কোড: লেনদেনের ইতিহাস (History) সেভ করা ---
+                        db.ref('transactions/' + user).push({
+                            type: "1xBet Load (" + xbetId + ")", // ব্র্যাকেটে আইডি দেখাবে
+                            amount: -amount, // টাকা কাটা গেছে তাই মাইনাস
+                            date: new Date().toLocaleDateString('bn-BD') + " " + new Date().toLocaleTimeString('bn-BD', {hour: '2-digit', minute:'2-digit'})
+                        }).then(() => {
+                            
+                            // ৫. টেলিগ্রাম নোটিফিকেশন পাঠানো
+                            const message = `🎮 **নতুন ১এক্সবেট লোড রিকোয়েস্ট!**\n\n👤 ইউজার: ${user}\n🆔 ১এক্সবেট আইডি: ${xbetId}\n💵 পরিমাণ: ${amount} ৳\n✅ স্ট্যাটাস: ব্যালেন্স ও ইতিহাস আপডেট হয়েছে।`;
 
-                        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}&parse_mode=Markdown`)
-                        .then(res => {
-                            alert("সফল! আপনার রিকোয়েস্ট পাঠানো হয়েছে।");
-                            window.location.replace("dashboard.html");
-                        })
-                        .catch(err => {
-                            alert("মেসেজ পাঠাতে সমস্যা হচ্ছে, তবে ব্যালেন্স কাটা হয়েছে।");
+                            fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}&parse_mode=Markdown`)
+                            .then(res => {
+                                alert("সফল! আপনার রিকোয়েস্ট পাঠানো হয়েছে এবং ব্যালেন্স আপডেট করা হয়েছে।");
+                                window.location.replace("dashboard.html");
+                            })
+                            .catch(err => {
+                                alert("রিকোয়েস্ট সফল হয়েছে!");
+                                window.location.replace("dashboard.html");
+                            });
                         });
+                        // --- ইতিহাস সেভ করার কাজ শেষ ---
 
                     });
                 } else {
