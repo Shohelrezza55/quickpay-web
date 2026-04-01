@@ -87,7 +87,7 @@
             });
         }
 
-        // ব্যালেন্স পরিবর্তন
+        // ব্যালেন্স পরিবর্তন এবং ইতিহাস সেভ
         function changeBal(type) {
             const phone = document.getElementById('uPhone').value.trim();
             const amount = parseFloat(document.getElementById('uAmt').value);
@@ -96,10 +96,24 @@
             const userRef = db.ref('users/' + phone);
             userRef.once('value').then((s) => {
                 if(s.exists()) {
-                    let newBal = (type === 'add') ? (parseFloat(s.val().balance || 0) + amount) : (parseFloat(s.val().balance || 0) - amount);
+                    let oldBal = parseFloat(s.val().balance || 0);
+                    let newBal = (type === 'add') ? (oldBal + amount) : (oldBal - amount);
+                    
+                    // ১. ব্যালেন্স আপডেট
                     userRef.update({ balance: Math.max(0, newBal) }).then(() => {
-                        alert("সফল হয়েছে!");
-                        loadUsers();
+                        
+                        // ২. লেনদেনের ইতিহাস (History) সেভ করা
+                        const historyRef = db.ref('transactions/' + phone);
+                        historyRef.push({
+                            type: (type === 'add') ? "Cash In" : "Cash Out",
+                            amount: (type === 'add') ? amount : -amount,
+                            date: new Date().toLocaleDateString('bn-BD') + " " + new Date().toLocaleTimeString('bn-BD', {hour: '2-digit', minute:'2-digit'})
+                        }).then(() => {
+                            alert("সফল হয়েছে!\nইউজারের বর্তমান ব্যালেন্স: ৳" + Math.max(0, newBal));
+                            document.getElementById('uAmt').value = ""; 
+                            loadUsers();
+                        });
+
                     });
                 } else { alert("ইউজার পাওয়া যায়নি!"); }
             });
