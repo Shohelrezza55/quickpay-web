@@ -11,20 +11,31 @@
         body { background: #050a18; font-family: 'Poppins', sans-serif; margin: 0; color: white; padding-bottom: 80px; }
         .top { background: linear-gradient(to bottom, #101827, #050a18); padding: 30px; text-align: center; border-bottom: 2px solid #00f2ff; }
         
-        /* ১. নোটিশ বোর্ড (Notice Board) */
+        /* ১. নোটিশ বোর্ড - বড় এবং নিচে নামানো হয়েছে */
         .notice-container {
-            background: rgba(0, 242, 255, 0.1);
-            border-bottom: 1px solid #00f2ff;
-            padding: 10px;
+            background: linear-gradient(90deg, rgba(0, 242, 255, 0.1), rgba(0, 136, 204, 0.2));
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            padding: 15px; /* প্যাডিং বাড়ানো হয়েছে */
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            margin: 15px 20px; /* উপরে এবং দুইপাশে গ্যাপ দিয়ে নিচে নামানো হয়েছে */
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 242, 255, 0.1);
         }
-        .notice-container i { color: #00f2ff; font-size: 18px; }
-        marquee { color: #fff; font-size: 14px; font-weight: 500; }
+        .notice-container i { color: #00f2ff; font-size: 22px; animation: ring 2s infinite; }
+        marquee { color: #fff; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; }
+
+        @keyframes ring {
+            0% { transform: rotate(0); }
+            10% { transform: rotate(15deg); }
+            20% { transform: rotate(-15deg); }
+            30% { transform: rotate(15deg); }
+            40% { transform: rotate(0); }
+        }
 
         /* Balance Card */
-        .balance-card { background: rgba(255,255,255,0.05); margin: 20px; padding: 25px; border-radius: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .balance-card { background: rgba(255,255,255,0.05); margin: 10px 20px 20px 20px; padding: 25px; border-radius: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .balance-card h1 { font-size: 40px; color: #39ff14; text-shadow: 0 0 10px #39ff14; margin: 10px 0; }
         
         /* Grid Menu */
@@ -33,7 +44,7 @@
         .item:active { transform: scale(0.95); }
         .item i { font-size: 30px; margin-bottom: 10px; display: block; }
         
-        /* ২. লেনদেনের ইতিহাস (Transaction History) */
+        /* ২. লেনদেনের ইতিহাস */
         .history-box {
             margin: 20px;
             background: rgba(255,255,255,0.03);
@@ -62,7 +73,6 @@
         /* Support Buttons */
         .sup-btn { display: flex; align-items: center; justify-content: center; padding: 15px; border-radius: 15px; text-decoration: none; color: white; font-weight: bold; margin: 10px 20px; border: 1px solid rgba(255,255,255,0.1); }
         
-        /* ৩. এনিমেটেড ফ্লোটিং সাপোর্ট বাটন */
         .floating-support {
             position: fixed;
             bottom: 25px;
@@ -91,12 +101,12 @@
 </head>
 <body onload="init()">
     
+    <div class="top"><h2 id="msg">লোড হচ্ছে...</h2></div>
+
     <div class="notice-container">
         <i class="fas fa-bullhorn"></i>
         <marquee id="noticeText">অ্যাডমিন প্যানেল থেকে বিশেষ নোটিশ এখানে দেখা যাবে...</marquee>
     </div>
-
-    <div class="top"><h2 id="msg">লোড হচ্ছে...</h2></div>
 
     <div class="balance-card">
         <span>বর্তমান ব্যালেন্স</span>
@@ -144,7 +154,6 @@
             const p = localStorage.getItem("savedUser");
             if(!p || localStorage.getItem("isLoggedIn") !== "true") return window.location.replace("index.html");
             
-            // ইউজারের নাম ও ব্যালেন্স লোড
             db.ref('users/'+p).on('value', s => {
                 if(s.exists()){
                     document.getElementById('msg').innerText = "স্বাগতম, " + (s.val().name || "ইউজার");
@@ -152,12 +161,10 @@
                 }
             });
 
-            // অ্যাডমিন প্যানেল থেকে নোটিশ লোড
             db.ref('admin/notice').on('value', s => {
                 if(s.exists()) document.getElementById('noticeText').innerText = s.val();
             });
 
-            // লেনদেনের ইতিহাস লোড
             db.ref('transactions/' + p).limitToLast(10).on('value', s => {
                 const list = document.getElementById('historyList');
                 list.innerHTML = "";
@@ -186,5 +193,6 @@
     </script>
 </body>
 </html>
+
 
 
