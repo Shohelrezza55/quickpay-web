@@ -8,9 +8,21 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #050a18; font-family: 'Poppins', sans-serif; margin: 0; color: white; padding-bottom: 50px; }
+        body { background: #050a18; font-family: 'Poppins', sans-serif; margin: 0; color: white; padding-bottom: 80px; }
         .top { background: linear-gradient(to bottom, #101827, #050a18); padding: 30px; text-align: center; border-bottom: 2px solid #00f2ff; }
         
+        /* ১. নোটিশ বোর্ড (Notice Board) */
+        .notice-container {
+            background: rgba(0, 242, 255, 0.1);
+            border-bottom: 1px solid #00f2ff;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .notice-container i { color: #00f2ff; font-size: 18px; }
+        marquee { color: #fff; font-size: 14px; font-weight: 500; }
+
         /* Balance Card */
         .balance-card { background: rgba(255,255,255,0.05); margin: 20px; padding: 25px; border-radius: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .balance-card h1 { font-size: 40px; color: #39ff14; text-shadow: 0 0 10px #39ff14; margin: 10px 0; }
@@ -21,45 +33,87 @@
         .item:active { transform: scale(0.95); }
         .item i { font-size: 30px; margin-bottom: 10px; display: block; }
         
-        /* New Promo Banner Section */
-        .promo-banner {
+        /* ২. লেনদেনের ইতিহাস (Transaction History) */
+        .history-box {
             margin: 20px;
-            padding: 20px;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background: rgba(255,255,255,0.03);
             border-radius: 20px;
-            border-left: 5px solid #00f2ff;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
+        .history-title { font-size: 18px; color: #00f2ff; margin-bottom: 15px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .history-list { max-height: 250px; overflow-y: auto; }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .history-item b { font-size: 14px; display: block; color: #eee; }
+        .history-item span { font-size: 11px; color: #777; }
+        .tx-amount { font-weight: bold; font-size: 15px; }
+
+        /* Promo Banner */
+        .promo-banner { margin: 20px; padding: 20px; background: linear-gradient(135deg, #1e3c72, #2a5298); border-radius: 20px; border-left: 5px solid #00f2ff; position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         .promo-banner h3 { margin: 0; color: #00f2ff; font-size: 18px; }
         .promo-banner p { margin: 5px 0 15px 0; font-size: 14px; opacity: 0.9; }
-        
-        /* Registration Button */
-        .reg-btn {
-            display: inline-block;
-            background: #39ff14;
-            color: #000;
-            padding: 10px 20px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 14px;
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
-        }
+        .reg-btn { display: inline-block; background: #39ff14; color: #000; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 14px; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); }
 
         /* Support Buttons */
         .sup-btn { display: flex; align-items: center; justify-content: center; padding: 15px; border-radius: 15px; text-decoration: none; color: white; font-weight: bold; margin: 10px 20px; border: 1px solid rgba(255,255,255,0.1); }
-        .sup-btn i { margin-right: 10px; }
+        
+        /* ৩. এনিমেটেড ফ্লোটিং সাপোর্ট বাটন */
+        .floating-support {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #00f2ff;
+            color: #000;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
+            z-index: 1000;
+            text-decoration: none;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(0, 242, 255, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); }
+        }
     </style>
 </head>
 <body onload="init()">
     
+    <div class="notice-container">
+        <i class="fas fa-bullhorn"></i>
+        <marquee id="noticeText">অ্যাডমিন প্যানেল থেকে বিশেষ নোটিশ এখানে দেখা যাবে...</marquee>
+    </div>
+
     <div class="top"><h2 id="msg">লোড হচ্ছে...</h2></div>
 
     <div class="balance-card">
-        <span>ব্যালেন্স</span>
+        <span>বর্তমান ব্যালেন্স</span>
         <h1 id="bal">৳ ০.০০</h1>
+    </div>
+
+    <div class="grid">
+        <a href="deposit.html" class="item"><i class="fas fa-wallet" style="color:#39ff14"></i>Deposit</a>
+        <a href="xbet_transfer.html" class="item"><i class="fas fa-exchange-alt" style="color:#00f2ff"></i>1xBet Load</a>
+        <a href="withdraw_money.html" class="item" style="grid-column: span 2;"><i class="fas fa-coins" style="color:#ff00e0"></i>Withdraw Money</a>
+    </div>
+
+    <div class="history-box">
+        <div class="history-title"><i class="fas fa-history"></i> লেনদেনের ইতিহাস</div>
+        <div id="historyList" class="history-list">
+            <p style="text-align:center; color:#555; font-size:12px;">লোড হচ্ছে...</p>
+        </div>
     </div>
 
     <div class="promo-banner">
@@ -70,23 +124,16 @@
         </a>
     </div>
 
-    <div class="grid">
-        <a href="deposit.html" class="item"><i class="fas fa-wallet" style="color:#39ff14"></i>Deposit</a>
-        <a href="xbet_transfer.html" class="item"><i class="fas fa-exchange-alt" style="color:#00f2ff"></i>1xBet Load</a>
-        <a href="withdraw_money.html" class="item" style="grid-column: span 2;"><i class="fas fa-coins" style="color:#ff00e0"></i>Withdraw Money</a>
-    </div>
-
-    <div style="margin:20px; background:linear-gradient(45deg, #ff3131, #ff00e0); padding:15px; border-radius:15px; text-align:center; font-weight:bold; box-shadow: 0 0 10px rgba(255,49,49,0.5);">
-        PROMO: 1x74643 (100% Bonus)
-    </div>
-
     <div class="support">
         <a href="https://m.me/100068273520772" class="sup-btn" style="background:#0078ff"><i class="fab fa-facebook-messenger"></i> Messenger</a>
         <a href="https://t.me/PZEEDMIR" class="sup-btn" style="background:#0088cc"><i class="fab fa-telegram-plane"></i> Admin Telegram</a>
-        <a href="https://t.me/veryfreetips" class="sup-btn" style="background:#222"><i class="fas fa-bullhorn"></i> Join Channel</a>
     </div>
 
     <p onclick="logout()" style="text-align:center; color:#ff3131; cursor:pointer; font-weight:bold; margin-top:30px; letter-spacing: 1px;">লগআউট</p>
+
+    <a href="https://t.me/PZEEDMIR" target="_blank" class="floating-support">
+        <i class="fab fa-telegram-plane"></i>
+    </a>
 
     <script>
         const firebaseConfig = { databaseURL: "https://quickpaybd-8b8d0-default-rtdb.firebaseio.com/" };
@@ -97,10 +144,37 @@
             const p = localStorage.getItem("savedUser");
             if(!p || localStorage.getItem("isLoggedIn") !== "true") return window.location.replace("index.html");
             
+            // ইউজারের নাম ও ব্যালেন্স লোড
             db.ref('users/'+p).on('value', s => {
                 if(s.exists()){
                     document.getElementById('msg').innerText = "স্বাগতম, " + (s.val().name || "ইউজার");
                     document.getElementById('bal').innerText = "৳ " + (s.val().balance || 0).toLocaleString();
+                }
+            });
+
+            // অ্যাডমিন প্যানেল থেকে নোটিশ লোড
+            db.ref('admin/notice').on('value', s => {
+                if(s.exists()) document.getElementById('noticeText').innerText = s.val();
+            });
+
+            // লেনদেনের ইতিহাস লোড
+            db.ref('transactions/' + p).limitToLast(10).on('value', s => {
+                const list = document.getElementById('historyList');
+                list.innerHTML = "";
+                if(s.exists()){
+                    s.forEach(child => {
+                        const tx = child.val();
+                        const color = tx.amount > 0 ? "#39ff14" : "#ff3131";
+                        const sign = tx.amount > 0 ? "+" : "";
+                        const item = `
+                            <div class="history-item">
+                                <div><b>${tx.type || 'Transaction'}</b><span>${tx.date || ''}</span></div>
+                                <div class="tx-amount" style="color:${color}">${sign} ৳ ${tx.amount}</div>
+                            </div>`;
+                        list.innerHTML = item + list.innerHTML;
+                    });
+                } else {
+                    list.innerHTML = "<p style='text-align:center; color:#555; font-size:12px;'>কোনো লেনদেন পাওয়া যায়নি</p>";
                 }
             });
         }
@@ -112,4 +186,5 @@
     </script>
 </body>
 </html>
+
 
